@@ -3,486 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق القرآن الكريم</title>
-    <link rel="stylesheet" href="style.css">
+    <title>تطبيق وِرْد - التسميع الذكي</title>
+    
+    <!-- ربط ملف الـ Manifest -->
     <link rel="manifest" href="manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="theme-color" content="#0066cc">
+    <meta name="description" content="تطبيق وِرْد للتسميع الذكي والتعليم">
+    
+    <!-- إعدادات الجوال -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .mic-btn {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 4px 10px rgba(0, 102, 204, 0.3);
+        }
+
+        .mic-btn.recording {
+            background-color: #dc3545;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.5);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        .output-box {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: right;
+            font-size: 1.1rem;
+            color: #333;
+            margin-top: 15px;
+            word-break: break-word;
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            color: #888;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-    <header class="app-header">
-        <div class="container header-content">
-            <h1><i class="fa-solid fa-quran"></i> القرآن الكريم</h1>
-            <div class="header-actions">
-                <button id="theme-toggle" title="تغيير المظهر"><i class="fa-solid fa-moon"></i></button>
-            </div>
-        </div>
-    </header>
 
-    <main class="container main-content">
-        <!-- شاشة الفهرس (قائمة السور) -->
-        <section id="surah-section" class="view-section active">
-            <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="search-surah" placeholder="ابحث عن اسم السورة...">
-            </div>
-            <div id="surahs-container" class="surahs-grid">
-                <!-- يتم تعبئتها تلقائياً عبر JavaScript -->
-                <div class="loading">جاري تحميل السور...</div>
-            </div>
-        </section>
+    <div class="container">
+        <h1>وِرْد - التسميع الذكي</h1>
+        <p>اضغط على الميكروفون وابدأ بالتسميع بصوت واضح</p>
+        
+        <!-- زر الميكروفون للتسميع -->
+        <button id="micBtn" class="mic-btn" onclick="toggleListening()">
+            🎤
+        </button>
+        
+        <div id="statusText" class="status-text">اضغط للبدء...</div>
+        
+        <!-- صندوق عرض ما تم تسميعه -->
+        <div id="outputBox" class="output-box">النص المسموع سيظهر هنا لحظياً...</div>
+    </div>
 
-        <!-- شاشة القراءة -->
-        <section id="reading-section" class="view-section">
-            <div class="reader-header">
-                <button id="back-to-surahs" class="btn-back"><i class="fa-solid fa-arrow-right"></i> الفهرس</button>
-                <h2 id="current-surah-title">اسم السورة</h2>
-                <div class="font-controls">
-                    <button id="decrease-font" title="تصغير الخط">-</button>
-                    <span id="font-size-indicator">المقاس</span>
-                    <button id="increase-font" title="تكبير الخط">+</button>
-                </div>
-            </div>
-            <div id="bismillah" class="bismillah-container">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
-            <div id="quran-text-container" class="quran-text">
-                <!-- يتم تعبئة الآيات تلقائياً عبر JavaScript -->
-                <div class="loading">جاري تحميل الآيات...</div>
-            </div>
-        </section>
-    </main>
-
-    <script src="script.js"></script>
     <script>
+        let recognition;
+        let isRecording = false;
+
+        // التحقق من دعم المتصفح لميزة التعرف على الصوت
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            
+            recognition.lang = 'ar-SA'; // اللغة العربية (الفصحى / السعودية)
+            recognition.continuous = true; // استمرار الاستماع حتى يتم الإيقاف يدوياً
+            recognition.interimResults = true; // إظهار الكلمات أثناء النطق فوراً
+
+            recognition.onstart = function() {
+                isRecording = true;
+                document.getElementById('micBtn').classList.add('recording');
+                document.getElementById('statusText').innerText = 'جاري الاستماع والتسميع... تحدث الآن';
+            };
+
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                // عرض النص في الصندوق
+                const outputBox = document.getElementById('outputBox');
+                if (finalTranscript !== '') {
+                    outputBox.innerText = finalTranscript;
+                    // هنا يمكنك مقارنة النص المسموع بالنص الأصلي المطلوب في التطبيق
+                } else if (interimTranscript !== '') {
+                    outputBox.innerText = interimTranscript;
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error('خطأ في التعرف على الصوت:', event.error);
+                document.getElementById('statusText').innerText = 'حدث خطأ، حاول مرة أخرى.';
+                stopListening();
+            };
+
+            recognition.onend = function() {
+                stopListening();
+            };
+        } else {
+            alert('عذراً، متصفحك لا يدعم ميزة التسميع الصوتي المباشر.');
+        }
+
+        function toggleListening() {
+            if (!recognition) {
+                alert('الميزة غير مدعومة في هذا الجهاز.');
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                document.getElementById('outputBox').innerText = '';
+                recognition.start();
+            }
+        }
+
+        function stopListening() {
+            isRecording = false;
+            document.getElementById('micBtn').classList.remove('recording');
+            document.getElementById('statusText').innerText = 'انتهى التسميع. اضغط للبدء مجدداً';
+        }
+
+        // تسجيل Service Worker لضمان التوافق مع PWABuilder
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered!'))
+                    .catch(err => console.log('Service Worker registration failed: ', err));
+            });
         }
     </script>
 </body>
-    </html>
- :root {
-    --bg-color: #f8f9fa;
-    --card-bg: #ffffff;
-    --text-color: #2b2b2b;
-    --primary-color: #1b4d3e;
-    --accent-color: #d4af37;
-    --border-color: #e0e0e0;
-    --header-bg: #1b4d3e;
-    --header-text: #ffffff;
-    --font-size: 24px;
-}
-
-[data-theme="dark"] {
-    --bg-color: #121212;
-    --card-bg: #1e1e1e;
-    --text-color: #e0e0e0;
-    --primary-color: #2e7d63;
-    --accent-color: #f39c12;
-    --border-color: #333333;
-    --header-bg: #1a1a1a;
-    --header-text: #f39c12;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-body {
-    font-family: 'Cairo', sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    line-height: 1.6;
-}
-
-.container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 15px;
-}
-
-.app-header {
-    background-color: var(--header-bg);
-    color: var(--header-text);
-    padding: 15px 0;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.header-actions button {
-    background: none;
-    border: none;
-    color: var(--header-text);
-    font-size: 20px;
-    cursor: pointer;
-    padding: 5px 10px;
-}
-
-.main-content {
-    padding: 20px 15px;
-}
-
-.view-section {
-    display: none;
-}
-
-.view-section.active {
-    display: block;
-}
-
-.search-box {
-    position: relative;
-    margin-bottom: 20px;
-}
-
-.search-box i {
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #888;
-}
-
-.search-box input {
-    width: 100%;
-    padding: 12px 45px 12px 15px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background-color: var(--card-bg);
-    color: var(--text-color);
-    font-family: 'Cairo', sans-serif;
-    font-size: 16px;
-    outline: none;
-}
-
-.surahs-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 15px;
-}
-
-.surah-card {
-    background-color: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 15px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.surah-card:hover {
-    border-color: var(--primary-color);
-    transform: translateY(-2px);
-}
-
-.surah-info h3 {
-    font-size: 18px;
-    margin-bottom: 3px;
-}
-
-.surah-info p {
-    font-size: 13px;
-    color: #888;
-}
-
-.surah-number {
-    background-color: var(--primary-color);
-    color: #fff;
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 14px;
-}
-
-.reader-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    background-color: var(--card-bg);
-    padding: 10px 15px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-
-.btn-back {
-    background: var(--primary-color);
-    color: #fff;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-family: 'Cairo', sans-serif;
-}
-
-.font-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.font-controls button {
-    background: var(--border-color);
-    border: none;
-    width: 30px;
-    height: 30px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    color: var(--text-color);
-}
-
-.bismillah-container {
-    text-align: center;
-    font-family: 'Amiri', serif;
-    font-size: 26px;
-    color: var(--primary-color);
-    margin-bottom: 25px;
-    display: none;
-}
-
-.quran-text {
-    background-color: var(--card-bg);
-    padding: 30px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    font-family: 'Amiri', serif;
-    font-size: var(--font-size);
-    text-align: justify;
-    line-height: 2.2;
-}
-
-.ayah {
-    display: inline;
-}
-
-.ayah-number {
-    display: inline-block;
-    font-family: 'Cairo', sans-serif;
-    font-size: 0.6em;
-    color: var(--accent-color);
-    border: 1px solid var(--accent-color);
-    border-radius: 50%;
-    width: 1.8em;
-    height: 1.8em;
-    text-align: center;
-    line-height: 1.8em;
-    margin: 0 5px;
-}
-
-.loading {
-    text-align: center;
-    padding: 40px;
-    color: #888;
-    grid-column: 1 / -1;
-}
-const API_BASE = "https://api.alquran.cloud/v1";
-let allSurahs = [];
-let currentFontSize = 24;
-
-// العناصر الرئيسية
-const surahsContainer = document.getElementById("surahs-container");
-const surahSection = document.getElementById("surah-section");
-const readingSection = document.getElementById("reading-section");
-const searchInput = document.getElementById("search-surah");
-const quranTextContainer = document.getElementById("quran-text-container");
-const currentSurahTitle = document.getElementById("current-surah-title");
-const bismillahContainer = document.getElementById("bismillah");
-const backBtn = document.getElementById("back-to-surahs");
-const themeToggleBtn = document.getElementById("theme-toggle");
-
-// جلب قائمة السور عند التحميل
-document.addEventListener("DOMContentLoaded", () => {
-    fetchSurahs();
-    loadTheme();
-    loadSavedSettings();
-});
-
-async function fetchSurahs() {
-    try {
-        const response = await fetch(`${API_BASE}/surah`);
-        const data = await response.json();
-        allSurahs = data.data;
-        displaySurahs(allSurahs);
-    } catch (error) {
-        surahsContainer.innerHTML = `<div class="loading">فشل تحميل السور. تأكد من اتصالك بالإنترنت.</div>`;
-    }
-}
-
-function displaySurahs(surahs) {
-    surahsContainer.innerHTML = "";
-    surahs.forEach(surah => {
-        const card = document.createElement("div");
-        card.className = "surah-card";
-        card.onclick = () => openSurah(surah.number, surah.englishNameTranslation);
-        
-        card.innerHTML = `
-            <div class="surah-info">
-                <h3>${surah.name}</h3>
-                <p>${surah.englishName} • ${surah.numberOfAyahs} آية • ${surah.revelationType === 'Meccan' ? 'مكية' : 'مدنية'}</p>
-            </div>
-            <div class="surah-number">${surah.number}</div>
-        `;
-        surahsContainer.appendChild(card);
-    });
-}
-
-// البحث في السور
-searchInput.addEventListener("input", (e) => {
-    const term = e.target.value.toLowerCase();
-    const filtered = allSurahs.filter(s => s.name.toLowerCase().includes(term) || s.englishName.toLowerCase().includes(term));
-    displaySurahs(filtered);
-});
-
-// فتح سورة للقراءة
-async function openSurah(number, translation) {
-    surahSection.classList.remove("active");
-    readingSection.classList.add("active");
-    quranTextContainer.innerHTML = `<div class="loading">جاري جلب الآيات...</div>`;
-    
-    // حفظ آخر سورة تمت قراءتها
-    localStorage.setItem("lastSurah", number);
-
-    try {
-        const response = await fetch(`${API_BASE}/surah/${number}`);
-        const data = await response.json();
-        const surah = data.data;
-
-        currentSurahTitle.textContent = surah.name;
-        
-        // إظهار البسملة إلا في التوبة (سورة 9)
-        if (number !== 9) {
-            bismillahContainer.style.display = "block";
-        } else {
-            bismillahContainer.style.display = "none";
-        }
-
-        quranTextContainer.innerHTML = "";
-        surah.ayahs.forEach(ayah => {
-            const ayahSpan = document.createElement("span");
-            ayahSpan.className = "ayah";
-            
-            // إزالة البسملة من أول آية في الفاتحة أو غيرها إن وجدت تكراراً لتجنب التشوه
-            let text = ayah.text;
-            if (ayah.numberInSurah === 1 && number !== 1 && number !== 9) {
-                text = text.replace("بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", "").trim();
-            }
-
-            ayahSpan.innerHTML = `${text} <span class="ayah-number">${ayah.numberInSurah}</span> `;
-            quranTextContainer.appendChild(ayahSpan);
-        });
-
-        window.scrollTo(0, 0);
-    } catch (error) {
-        quranTextContainer.innerHTML = `<div class="loading">فشل تحميل الآيات.</div>`;
-    }
-}
-
-// العودة للفهرس
-backBtn.onclick = () => {
-    readingSection.classList.remove("active");
-    surahSection.classList.add("active");
-};
-
-// التحكم بحجم الخط
-document.getElementById("increase-font").onclick = () => {
-    currentFontSize += 2;
-    updateFontSize();
-};
-
-document.getElementById("decrease-font").onclick = () => {
-    if (currentFontSize > 16) {
-        currentFontSize -= 2;
-        updateFontSize();
-    }
-};
-
-function updateFontSize() {
-    quranTextContainer.style.fontSize = `${currentFontSize}px`;
-    document.getElementById("font-size-indicator").textContent = currentFontSize;
-    localStorage.setItem("fontSize", currentFontSize);
-}
-
-function loadSavedSettings() {
-    const savedSize = localStorage.getItem("fontSize");
-    if (savedSize) {
-        currentFontSize = parseInt(savedSize);
-        quranTextContainer.style.fontSize = `${currentFontSize}px`;
-        document.getElementById("font-size-indicator").textContent = currentFontSize;
-    } else {
-        document.getElementById("font-size-indicator").textContent = currentFontSize;
-    }
-}
-
-// تبديل المظهر (ليلي / نهاري)
-themeToggleBtn.onclick = () => {
-    const currentTheme = document.documentElement.getAttribute("data-theme");
-    if (currentTheme === "dark") {
-        document.documentElement.removeAttribute("data-theme");
-        localStorage.setItem("theme", "light");
-        themeToggleBtn.innerHTML = `<i class="fa-solid fa-moon"></i>`;
-    } else {
-        document.documentElement.setAttribute("data-theme", "dark");
-        localStorage.setItem("theme", "dark");
-        themeToggleBtn.innerHTML = `<i class="fa-solid fa-sun"></i>`;
-    }
-};
-
-function loadTheme() {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
-        document.documentElement.setAttribute("data-theme", "dark");
-        themeToggleBtn.innerHTML = `<i class="fa-solid fa-sun"></i>`;
-    }
-}
-                {
-  "name": "تطبيق القرآن الكريم",
-  "short_name": "القرآن",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#f8f9fa",
-  "theme_color": "#1b4d3e",
-  "icons": [
-    {
-      "src": "https://img.icons8.com/color/192/000000/quran.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    }
-  ]
-}
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open('quran-pwa-v1').then((cache) => {
-      return cache.addAll([
-        './index.html',
-        './style.css',
-        './script.js',
-        './manifest.json'
-      ]);
-    })
-  );
-});
-
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => {
-      return response || fetch(e.request);
-    })
-  );
-});
+</html>
